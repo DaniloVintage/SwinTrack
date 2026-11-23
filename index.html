@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SwimTrack Pro — WAQ & RFEN</title>
 
-<link rel="manifest" href="manifest.json">
+
 <meta name="theme-color" content="#0f172a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -590,6 +590,7 @@ async function forceAppUpdate() {
     const keys = await caches.keys();
     await Promise.all(keys.map(k => caches.delete(k)));
   }
+  
   if ('serviceWorker' in navigator) {
     const regs = await navigator.serviceWorker.getRegistrations();
     await Promise.all(regs.map(r => r.update()));
@@ -598,6 +599,36 @@ async function forceAppUpdate() {
 }
 
 init();
+(function setupDynamicPWA() {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 512;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, 512, 512);
+  ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 34;
+  ctx.beginPath(); ctx.arc(256, 272, 160, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 28; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(256, 176); ctx.lineTo(256, 272); ctx.lineTo(320, 312); ctx.stroke();
+  ctx.fillStyle = '#0ea5e9'; ctx.fillRect(216, 64, 80, 28);
+
+  const pngUrl = c.toDataURL('image/png');
+  const appleIcon = document.createElement('link');
+  appleIcon.rel = 'apple-touch-icon'; appleIcon.href = pngUrl;
+  document.head.appendChild(appleIcon);
+
+  const manifest = {
+    name: "SwimTrack Pro — WAQ & RFEN",
+    short_name: "SwimTrack",
+    start_url: location.href,
+    display: "standalone",
+    background_color: "#0f172a",
+    theme_color: "#0f172a",
+    icons: [{ src: pngUrl, sizes: "512x512", type: "image/png", purpose: "any" }]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  const link = document.createElement('link');
+  link.rel = 'manifest'; link.href = URL.createObjectURL(blob);
+  document.head.appendChild(link);
+})();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
