@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SwimTrack Pro — WAQ & RFEN</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SwimTrack">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://w3.org' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230f172a'/%3E%3Ccircle cx='256' cy='272' r='160' fill='none' stroke='%230ea5e9' stroke-width='32'/%3E%3Cpath d='M256 176v96l64 40' fill='none' stroke='%2338bdf8' stroke-width='28' stroke-linecap='round'/%3E%3Crect x='216' y='64' width='80' height='28' rx='14' fill='%230ea5e9'/%3E%3C/svg%3E">
+
+
+<style>
+  :root { --bg: #0f172a; --card: #1e293b; --accent: #0ea5e9; --green: #10b981; --red: #ef4444; --text: #f8fafc; --muted: #94a3b8; }
+  * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 75px; }
+  header { background: var(--card); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; position: sticky; top: 0; z-index: 10; }
+  header h1 { margin: 0; font-size: 1.05rem; color: var(--accent); }
+  #activeSwimmerSelect { width: auto; max-width: 190px; padding: 6px 8px; font-size: 0.85rem; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 8px; }
+  .container { max-width: 500px; margin: 0 auto; padding: 14px; }
+  .card { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 14px; border: 1px solid #334155; }
+  h3 { margin-top: 0; font-size: 1.05rem; }
+  label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; margin-top: 10px; }
+  input, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 0.95rem; }
+  .row { display: flex; gap: 10px; }
+  .row > div { flex: 1; }
+  button { width: 100%; padding: 13px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: bold; cursor: pointer; margin-top: 12px; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-green { background: var(--green); color: #052e16; font-size: 1.15rem; padding: 20px; }
+  .btn-red { background: var(--red); color: white; font-size: 1.15rem; padding: 20px; }
+  .btn-outline { background: transparent; border: 1px solid #475569; color: var(--text); }
+  .chrono-display { font-size: 3.1rem; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; margin: 14px 0; color: #38bdf8; }
+  .splits-list { max-height: 170px; overflow-y: auto; font-size: 0.88rem; border-top: 1px solid #334155; padding-top: 8px; }
+  .split-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #0f172a; }
+  .badge-ok { background: rgba(16,185,129,0.2); color: #34d399; padding: 8px 10px; border-radius: 8px; font-weight: bold; margin-top: 8px; font-size: 0.88rem; }
+  .badge-no { background: rgba(239,68,68,0.2); color: #f87171; padding: 8px 10px; border-radius: 8px; font-weight: bold; margin-top: 8px; font-size: 0.88rem; }
+  nav { position: fixed; bottom: 0; width: 100%; background: var(--card); display: flex; border-top: 1px solid #334155; z-index: 10; }
+  nav button { margin: 0; border-radius: 0; background: transparent; color: var(--muted); font-size: 0.8rem; padding: 12px 4px; }
+  nav button.active { color: var(--accent); border-top: 2px solid var(--accent); }
+  .hidden { display: none; }
+  canvas { width: 100%; height: 180px; background: #0f172a; border-radius: 8px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏊 SwimTrack</h1>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <select id="activeSwimmerSelect" onchange="switchProfile()"></select>
+    <button onclick="forceAppUpdate()" title="Actualizar app" style="width:auto;margin:0;padding:6px 9px;background:#0f172a;border:1px solid #475569;color:#38bdf8;border-radius:8px;font-size:0.9rem;">🔄</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- INICIO -->
+  <div id="view-home" class="hidden">
+    <div class="card">
+      <h3>Panel Principal</h3>
+      <p id="homeWelcome" style="color:var(--muted);font-size:0.9rem;margin-top:0;"></p>
+      <button class="btn-primary" onclick="showTab('crono')">⏱️ Iniciar Cronómetro en Vivo</button>
+      <button class="btn-outline" onclick="showTab('manual')">🔢 Calcular Marca Manualmente</button>
+    </div>
+  </div>
+
+
+  <!-- CRONÓMETRO -->
+  <div id="view-crono" class="hidden">
+    <div class="card" id="crono-setup">
+      <h3>Configurar Toma de Tiempos</h3>
+      <div class="row">
+        <div>
+          <label>Piscina</label>
+          <select id="cPool" onchange="updateSplitOptions()">
+            <option value="p50">50 metros</option>
+            <option value="p25">25 metros</option>
+          </select>
+        </div>
+        <div>
+          <label>Parciales cada</label>
+          <select id="cSplitDist">
+            <option value="50">50m</option>
+            <option value="100">100m</option>
+          </select>
+        </div>
+      </div>
+      <label>Prueba</label>
+      <select id="cEvent" class="event-selector"></select>
+      <button class="btn-green" onclick="startChrono()">▶ SALIDA (START)</button>
+    </div>
+
+    <div class="card hidden" id="crono-running">
+      <div style="display:flex;justify-content:space-between;color:var(--muted);font-size:0.85rem;">
+        <span id="runTitle"></span>
+        <span id="runTarget"></span>
+      </div>
+      <div class="chrono-display" id="chronoTime">00:00.00</div>
+      <div class="splits-list" id="splitsList"></div>
+      <button id="btnAction" class="btn-primary" style="padding:24px;font-size:1.2rem;" onclick="recordSplit()"></button>
+      <div class="row">
+        <div><button class="btn-outline" onclick="undoSplit()">↩ Deshacer</button></div>
+        <div><button class="btn-red" style="padding:13px;font-size:0.95rem;" onclick="stopChrono()">⏹ Parar Ya</button></div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="crono-result">
+      <h3>Resultado de la Toma</h3>
+      <div style="font-size:2.1rem;font-weight:bold;color:var(--accent);" id="resTime"></div>
+      <div style="font-size:1.15rem;margin:6px 0;">Puntos WAQ: <strong id="resWaq"></strong> pts</div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:10px 0;">
+        <input type="checkbox" id="chkManualOffset" style="width:auto;" onchange="recalcResult()"> Sumar +0.20s (compensar crono manual)
+      </label>
+      <div id="resMinimaBox"></div>
+      <button class="btn-green" style="padding:14px;font-size:1rem;" onclick="saveToHistory()">💾 Guardar en Historial</button>
+      <button class="btn-outline" onclick="resetChrono()">Descartar / Nueva Toma</button>
+    </div>
+  </div>
+
+  <!-- CÁLCULO MANUAL -->
+  <div id="view-manual" class="hidden">
+    <div class="card">
+      <h3>Calculadora Manual (WAQ y RFEN)</h3>
+      <div class="row">
+        <div>
+          <label>Piscina</label>
+          <select id="mPool"><option value="p50">50 metros</option><option value="p25">25 metros</option></select>
+        </div>
+        <div>
+          <label>Prueba</label>
+          <select id="mEvent" class="event-selector"></select>
+        </div>
+      </div>
+      <label>Marca (formato mm:ss.cc o ss.cc)</label>
+      <input type="text" id="mTimeInput" placeholder="Ej. 2:01.45 o 58.30">
+      <button class="btn-primary" onclick="calcManual()">Comprobar Puntos y Mínima</button>
+      <div id="manualOutput" style="margin-top:14px;"></div>
+    </div>
+  </div>
+
+  <!-- HISTORIAL Y ESTADÍSTICAS -->
+  <div id="view-history" class="hidden">
+    <div class="card">
+      <h3>Evolución y Estadísticas</h3>
+      <div class="row">
+        <div>
+          <label>Prueba</label>
+          <select id="hFilterEvent" class="event-selector" onchange="renderHistory()"></select>
+        </div>
+        <div>
+          <label>Piscina</label>
+          <select id="hFilterPool" onchange="renderHistory()">
+            <option value="p50">50m</option>
+            <option value="p25">25m</option>
+          </select>
+        </div>
+      </div>
+      <div id="pbBanner" style="margin-top:10px;font-size:0.9rem;color:var(--green);font-weight:bold;"></div>
+      <canvas id="chartCanvas" width="440" height="180"></canvas>
+      <button class="btn-outline" style="margin-top:10px;padding:9px;font-size:0.85rem;" onclick="exportCSV()">📥 Exportar Historial a Excel (CSV)</button>
+      <div id="historyList" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- PERFILES Y ACTUALIZACIÓN JSON -->
+  <div id="view-perfil" class="hidden">
+    <div class="card">
+      <h3>Añadir / Editar Nadador</h3>
+      <label>Nombre y Apellidos</label>
+      <input type="text" id="profName" placeholder="Ej. Martina Gómez">
+      <div class="row">
+        <div>
+          <label>Sexo</label>
+          <select id="profSex"><option value="F">Femenino</option><option value="M">Masculino</option></select>
+        </div>
+        <div>
+          <label>Año Nacimiento</label>
+          <input type="number" id="profYear" value="2010" min="1950" max="2022">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="addProfile()">Guardar Nadador</button>
+    </div>
+
+    <div class="card">
+      <h3>Cargar tus archivos JSON</h3>
+      <p style="font-size:0.82rem;color:var(--muted);margin-top:0;">Sube aquí tu archivo de mínimas RFEN o tiempos base WAQ para actualizar la app sin tocar el código.</p>
+      <label>Importar JSON de Mínimas RFEN</label>
+      <input type="file" accept=".json" onchange="importJSON(event, 'rfen')">
+      <label>Importar JSON de Tiempos Base WAQ</label>
+      <input type="file" accept=".json" onchange="importJSON(event, 'waq')">
+    </div>
+  </div>
+</div>
+
+<nav>
+  <button onclick="showTab('home')" id="nav-home">🏠 Inicio</button>
+  <button onclick="showTab('crono')" id="nav-crono">⏱️ Crono</button>
+  <button onclick="showTab('manual')" id="nav-manual">🔢 Manual</button>
+  <button onclick="showTab('history')" id="nav-history">📈 Gráficas</button>
+  <button onclick="showTab('perfil')" id="nav-perfil">👤 Perfil</button>
+</nav>
+
+
+
+<script>
+const EVENTS = [
+  ["50_libre","50m Libre"],["100_libre","100m Libre"],["200_libre","200m Libre"],["400_libre","400m Libre"],["800_libre","800m Libre"],["1500_libre","1500m Libre"],
+  ["50_espalda","50m Espalda"],["100_espalda","100m Espalda"],["200_espalda","200m Espalda"],
+  ["50_braza","50m Braza"],["100_braza","100m Braza"],["200_braza","200m Braza"],
+  ["50_mariposa","50m Mariposa"],["100_mariposa","100m Mariposa"],["200_mariposa","200m Mariposa"],
+  ["100_estilos","100m Estilos (p25)"],["200_estilos","200m Estilos"],["400_estilos","400m Estilos"]
+];
+
+let WAQ_BASE = JSON.parse(localStorage.getItem('customWaq')) || {
+  p50: {
+    M: { "50_libre":20.91,"100_libre":46.40,"200_libre":102.00,"400_libre":219.96,"800_libre":452.12,"1500_libre":870.67,"50_espalda":23.55,"100_espalda":51.60,"200_espalda":111.92,"50_braza":25.95,"100_braza":56.88,"200_braza":125.48,"50_mariposa":22.27,"100_mariposa":49.45,"200_mariposa":110.34,"200_estilos":112.69,"400_estilos":242.50 },
+    F: { "50_libre":23.61,"100_libre":51.71,"200_libre":112.23,"400_libre":234.18,"800_libre":484.12,"1500_libre":920.48,"50_espalda":26.86,"100_espalda":57.13,"200_espalda":123.14,"50_braza":29.16,"100_braza":64.13,"200_braza":137.55,"50_mariposa":24.43,"100_mariposa":54.60,"200_mariposa":121.81,"200_estilos":125.70,"400_estilos":263.65 }
+  },
+  p25: {
+    M: { "50_libre":19.90,"100_libre":44.84,"200_libre":98.61,"400_libre":212.25,"800_libre":440.46,"1500_libre":846.88,"50_espalda":22.11,"100_espalda":48.16,"200_espalda":105.12,"50_braza":24.95,"100_braza":55.28,"200_braza":119.52,"50_mariposa":21.32,"100_mariposa":47.68,"200_mariposa":106.85,"100_estilos":49.28,"200_estilos":108.88,"400_estilos":234.81 },
+    F: { "50_libre":22.83,"100_libre":49.93,"200_libre":109.36,"400_libre":230.25,"800_libre":474.00,"1500_libre":908.24,"50_espalda":25.23,"100_espalda":54.02,"200_espalda":117.33,"50_braza":28.37,"100_braza":62.36,"200_braza":132.50,"50_mariposa":23.72,"100_mariposa":52.71,"200_mariposa":119.32,"100_estilos":55.11,"200_estilos":121.63,"400_estilos":255.48 }
+  }
+};
+
+const DEFAULT_RFEN_DATA = {
+  "temporada": "2026-2027",
+  "campeonatos": [
+    {
+      "id": "alevin_verano_2027_p50",
+      "nombre": "XIV Cto. España Alevín (Mínimas A)",
+      "piscina": "p50",
+      "minimas": {
+        "M": {
+          "2014": { "50_libre": 28.10, "100_libre": 62.00, "200_libre": 136.00, "400_libre": 290.00, "800_libre": 597.00 },
+          "2015": { "50_libre": 29.95, "100_libre": 66.45, "200_libre": 145.70, "400_libre": 308.00, "800_libre": 640.00 }
+        },
+        "F": {
+          "2014": { "50_libre": 29.30, "100_libre": 63.90, "200_libre": 140.00, "400_libre": 294.35, "800_libre": 607.45 },
+          "2015": { "50_libre": 30.50, "100_libre": 67.60, "200_libre": 147.00, "400_libre": 311.00, "800_libre": 647.00 }
+        }
+      }
+    },
+    {
+      "id": "infantil_verano_2027_p25",
+      "nombre": "XLVIII Cto. España Infantil Verano (Mínimas B)",
+      "piscina": "p25",
+      "minimas": {
+        "M": {
+          "2012": { "50_libre": 24.75, "100_libre": 55.00, "200_libre": 121.35, "400_libre": 260.50, "800_libre": 543.60, "1500_libre": 1032.00 },
+          "2013": { "50_libre": 25.65, "100_libre": 56.80, "200_libre": 125.70, "400_libre": 267.30, "800_libre": 555.30, "1500_libre": 1065.10 }
+        },
+        "F": {
+          "2012": { "50_libre": 27.30, "100_libre": 59.15, "200_libre": 130.50, "400_libre": 277.25, "800_libre": 569.55, "1500_libre": 1089.30 },
+          "2013": { "50_libre": 27.80, "100_libre": 59.95, "200_libre": 131.55, "400_libre": 283.15, "800_libre": 577.85, "1500_libre": 1115.95 }
+        }
+      }
+    },
+    {
+      "id": "junior_verano_2027_p25",
+      "nombre": "XLVIII Cto. España Júnior Verano (Mínimas B)",
+      "piscina": "p25",
+      "minimas": {
+        "M": {
+          "2009": { "50_libre": 23.20, "100_libre": 51.70, "200_libre": 114.10, "400_libre": 241.55 },
+          "2010": { "50_libre": 23.70, "100_libre": 52.45, "200_libre": 116.10, "400_libre": 246.00 },
+          "2011": { "50_libre": 24.15, "100_libre": 53.55, "200_libre": 117.85, "400_libre": 250.60 }
+        },
+        "F": {
+          "2009": { "50_libre": 26.45, "100_libre": 57.45, "200_libre": 124.95, "400_libre": 265.35 },
+          "2010": { "50_libre": 26.80, "100_libre": 58.05, "200_libre": 126.20, "400_libre": 267.45 },
+          "2011": { "50_libre": 27.05, "100_libre": 58.75, "200_libre": 127.55, "400_libre": 270.10 }
+        }
+      }
+    }
+  ]
+};
+
+let RFEN_DATA = JSON.parse(localStorage.getItem('customRfen')) || DEFAULT_RFEN_DATA;
+function vibrate(ms = 45) {
+  if (navigator.vibrate) navigator.vibrate(ms);
+}
+let profiles = JSON.parse(localStorage.getItem('swimProfiles')) || [];
+let activeIdx = parseInt(localStorage.getItem('activeSwimmerIdx')) || 0;
+let historyData = JSON.parse(localStorage.getItem('swimHistory')) || [];
+let timerInterval = null, startTime = 0, splits = [], rawFinalSec = 0;
+
+function init() {
+  document.querySelectorAll('.event-selector').forEach(sel => {
+    sel.innerHTML = EVENTS.map(e => `<option value="${e[0]}">${e[1]}</option>`).join('');
+    sel.value = "200_libre";
+  });
+  renderProfileSelect();
+  if (profiles.length === 0) showTab('perfil');
+  else showTab('home');
+}
+
+function renderProfileSelect() {
+  const sel = document.getElementById('activeSwimmerSelect');
+  if (profiles.length === 0) {
+    sel.innerHTML = '<option>Sin perfil</option>';
+    return;
+  }
+  sel.innerHTML = profiles.map((p, i) => `<option value="${i}">${p.name} (${p.year})</option>`).join('');
+  sel.value = activeIdx;
+  const p = profiles[activeIdx];
+  document.getElementById('homeWelcome').textContent = `Nadador activo: ${p.name} · Sexo: ${p.sex} · Año: ${p.year}`;
+}
+
+function switchProfile() {
+  activeIdx = parseInt(document.getElementById('activeSwimmerSelect').value);
+  localStorage.setItem('activeSwimmerIdx', activeIdx);
+  renderProfileSelect();
+  if (!document.getElementById('view-history').classList.contains('hidden')) renderHistory();
+}
+
+function addProfile() {
+  const name = document.getElementById('profName').value.trim();
+  if (!name) return alert("Escribe un nombre.");
+  const sex = document.getElementById('profSex').value;
+  const year = document.getElementById('profYear').value;
+  profiles.push({ id: Date.now(), name, sex, year });
+  activeIdx = profiles.length - 1;
+  localStorage.setItem('swimProfiles', JSON.stringify(profiles));
+  localStorage.setItem('activeSwimmerIdx', activeIdx);
+  document.getElementById('profName').value = '';
+  renderProfileSelect();
+  showTab('home');
+}
+
+function importJSON(e, type) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      if (type === 'rfen') {
+        RFEN_DATA = parsed;
+        localStorage.setItem('customRfen', JSON.stringify(parsed));
+        alert("✅ Mínimas RFEN cargadas correctamente.");
+      } else {
+        WAQ_BASE = parsed;
+        localStorage.setItem('customWaq', JSON.stringify(parsed));
+        alert("✅ Tiempos base WAQ actualizados.");
+      }
+    } catch (err) { alert("❌ Error: el archivo no es un JSON válido."); }
+  };
+  reader.readAsText(file);
+}
+
+function showTab(tab) {
+  ['home','crono','manual','history','perfil'].forEach(v => document.getElementById('view-'+v).classList.add('hidden'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-'+tab).classList.remove('hidden');
+  document.getElementById('nav-'+tab).classList.add('active');
+  if (tab === 'history') renderHistory();
+}
+
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = (sec % 60).toFixed(2).padStart(5, '0');
+  return m > 0 ? `${String(m).padStart(2,'0')}:${s}` : s;
+}
+
+function parseTime(str) {
+  str = str.trim().replace(',', '.');
+  if (str.includes(':')) {
+    const [m, s] = str.split(':');
+    return parseInt(m) * 60 + parseFloat(s);
+  }
+  return parseFloat(str);
+}
+
+function calcWAQ(pool, sex, event, sec) {
+  const base = WAQ_BASE[pool]?.[sex]?.[event];
+  if (!base || !sec || sec <= 0) return 0;
+  return Math.floor(1000 * Math.pow(base / sec, 3));
+}
+
+function checkMinimasHTML(pool, sex, year, event, sec) {
+  let html = '';
+  (RFEN_DATA.campeonatos || []).forEach(c => {
+    const min = c.minimas?.[sex]?.[year]?.[event];
+    if (min) {
+      const diff = (sec - min).toFixed(2);
+      if (sec <= min) {
+        html += `<div class="badge-ok">🟢 ${c.nombre} (${c.piscina}): ¡MÍNIMA! (${formatTime(min)} | ${diff}s)</div>`;
+      } else {
+        html += `<div class="badge-no">🔴 ${c.nombre} (${c.piscina}): Mínima ${formatTime(min)} (a +${diff}s)</div>`;
+      }
+    }
+  });
+  return html || `<div style="color:var(--muted);font-size:0.82rem;margin-top:8px;">Sin mínima cargada para ${year} en esta prueba (puedes subir tu JSON en Perfil).</div>`;
+}
+
+function updateSplitOptions() {
+  const pool = document.getElementById('cPool').value;
+  document.getElementById('cSplitDist').innerHTML = pool === 'p25' ? '<option value="25">25m</option><option value="50" selected>50m</option><option value="100">100m</option>' : '<option value="50" selected>50m</option><option value="100">100m</option>';
+}
+
+function startChrono() {
+  vibrate(50);
+  if (profiles.length === 0) return alert("Crea primero un perfil de nadador.");
+  const ev = document.getElementById('cEvent');
+  const totalDist = parseInt(ev.value.split('_')[0]);
+  const step = parseInt(document.getElementById('cSplitDist').value);
+  splits = [];
+  startTime = performance.now();
+  document.getElementById('crono-setup').classList.add('hidden');
+  document.getElementById('crono-result').classList.add('hidden');
+  document.getElementById('crono-running').classList.remove('hidden');
+  document.getElementById('runTitle').textContent = `${ev.options[ev.selectedIndex].text} (${document.getElementById('cPool').value})`;
+  document.getElementById('runTarget').textContent = `Meta: ${totalDist}m`;
+  document.getElementById('splitsList').innerHTML = '';
+  updateActionButton(step, totalDist);
+  timerInterval = setInterval(() => {
+    document.getElementById('chronoTime').textContent = formatTime((performance.now() - startTime) / 1000);
+  }, 20);
+}
+
+function updateActionButton(nextDist, totalDist) {
+  const btn = document.getElementById('btnAction');
+  if (nextDist >= totalDist) { btn.textContent = `🏁 PARAR EN META (${totalDist}m)`; btn.className = 'btn-red'; }
+  else { btn.textContent = `⏱️ PARCIAL (${nextDist}m)`; btn.className = 'btn-primary'; }
+}
+
+function recordSplit() {
+vibrate(35);
+  const elapsed = (performance.now() - startTime) / 1000;
+  const totalDist = parseInt(document.getElementById('cEvent').value.split('_')[0]);
+  const step = parseInt(document.getElementById('cSplitDist').value);
+  const currentDist = (splits.length + 1) * step;
+  const prevTime = splits.length > 0 ? splits[splits.length - 1].cum : 0;
+  splits.push({ dist: Math.min(currentDist, totalDist), cum: elapsed, lap: elapsed - prevTime });
+  document.getElementById('splitsList').innerHTML = splits.map(s => `<div class="split-item"><span><strong>${s.dist}m</strong></span><span>Parcial: ${formatTime(s.lap)}</span><span>Acum: ${formatTime(s.cum)}</span></div>`).reverse().join('');
+  if (currentDist >= totalDist) finishChrono(elapsed);
+  else updateActionButton(currentDist + step, totalDist);
+}
+
+function undoSplit() {
+  if (splits.length === 0) return;
+  splits.pop();
+  const totalDist = parseInt(document.getElementById('cEvent').value.split('_')[0]);
+  const step = parseInt(document.getElementById('cSplitDist').value);
+  document.getElementById('splitsList').innerHTML = splits.map(s => `<div class="split-item"><span><strong>${s.dist}m</strong></span><span>Parcial: ${formatTime(s.lap)}</span><span>Acum: ${formatTime(s.cum)}</span></div>`).reverse().join('');
+  updateActionButton((splits.length + 1) * step, totalDist);
+}
+
+function stopChrono() { finishChrono((performance.now() - startTime) / 1000); }
+
+function finishChrono(finalSec) {
+vibrate([60, 50, 60]);
+  clearInterval(timerInterval);
+  rawFinalSec = parseFloat(finalSec.toFixed(2));
+  document.getElementById('crono-running').classList.add('hidden');
+  document.getElementById('crono-result').classList.remove('hidden');
+  document.getElementById('chkManualOffset').checked = false;
+  recalcResult();
+}
+
+function recalcResult() {
+    const p = profiles[activeIdx];
+  const finalSec = parseFloat((rawFinalSec + (document.getElementById('chkManualOffset').checked ? 0.20 : 0)).toFixed(2));
+  const pool = document.getElementById('cPool').value;
+  const event = document.getElementById('cEvent').value;
+  document.getElementById('resTime').textContent = formatTime(finalSec);
+  document.getElementById('resWaq').textContent = calcWAQ(pool, p.sex, event, finalSec);
+  document.getElementById('resMinimaBox').innerHTML = checkMinimasHTML(pool, p.sex, p.year, event, finalSec);
+}
+
+function saveToHistory() {
+  const p = profiles[activeIdx];
+  const finalSec = parseFloat((rawFinalSec + (document.getElementById('chkManualOffset').checked ? 0.20 : 0)).toFixed(2));
+  const pool = document.getElementById('cPool').value;
+  const event = document.getElementById('cEvent').value;
+  historyData.unshift({
+    swimmerId: p.id,
+    name: p.name,
+    date: new Date().toLocaleDateString('es-ES'),
+    pool,
+    event,
+    timeSec: finalSec,
+    pts: calcWAQ(pool, p.sex, event, finalSec),
+    splits
+  });
+  localStorage.setItem('swimHistory', JSON.stringify(historyData));
+  alert("✅ Guardado en el historial.");
+  resetChrono();
+}
+
+function resetChrono() {
+  document.getElementById('crono-result').classList.add('hidden');
+  document.getElementById('crono-setup').classList.remove('hidden');
+}
+
+function calcManual() {
+  if (profiles.length === 0) return alert("Crea primero un perfil.");
+  const p = profiles[activeIdx];
+  const sec = parseTime(document.getElementById('mTimeInput').value);
+  if (isNaN(sec) || sec <= 0) return alert("Introduce un tiempo válido (ej. 1:02.45)");
+  const pool = document.getElementById('mPool').value;
+  const event = document.getElementById('mEvent').value;
+  document.getElementById('manualOutput').innerHTML = `<div style="font-size:1.2rem;">Marca: <strong>${formatTime(sec)}</strong> · Puntos WAQ: <strong style="color:var(--accent)">${calcWAQ(pool, p.sex, event, sec)} pts</strong></div>${checkMinimasHTML(pool, p.sex, p.year, event, sec)}`;
+}
+
+function renderHistory() {
+  if (profiles.length === 0) return;
+  const p = profiles[activeIdx];
+  const filterEv = document.getElementById('hFilterEvent').value;
+  const filterPool = document.getElementById('hFilterPool').value;
+  const swimmerRecords = historyData.filter(h => h.swimmerId === p.id);
+  const filtered = swimmerRecords.filter(h => h.event === filterEv && h.pool === filterPool).reverse();
+
+  const pbEl = document.getElementById('pbBanner');
+  if (filtered.length > 0) {
+    const best = Math.min(...filtered.map(f => f.timeSec));
+    pbEl.textContent = `🏆 Mejor Marca (${filterPool}): ${formatTime(best)}`;
+  } else {
+    pbEl.textContent = '';
+  }
+
+    document.getElementById('historyList').innerHTML = swimmerRecords.length === 0
+    ? '<p style="color:var(--muted)">Sin registros para este nadador.</p>'
+    : swimmerRecords.map((h, idx) => {
+        const splitsHtml = (h.splits && h.splits.length > 0)
+          ? `<div id="hist-splits-${idx}" class="hidden" style="background:#0f172a;padding:8px;border-radius:8px;margin-top:6px;font-size:0.8rem;">
+              ${h.splits.map(s => `<div style="display:flex;justify-content:space-between;padding:2px 0;">
+                <span>${s.dist}m</span>
+                <span>Parcial: <strong>${formatTime(s.lap)}</strong></span>
+                <span style="color:var(--muted)">Acum: ${formatTime(s.cum)}</span>
+              </div>`).join('')}
+            </div>`
+          : '';
+        return `<div style="border-bottom:1px solid #0f172a;padding:8px 0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="document.getElementById('hist-splits-${idx}')?.classList.toggle('hidden')">
+            <div>
+              <strong>${h.event.replace('_',' ')} (${h.pool})</strong> ${h.splits?.length ? '▾' : ''}<br>
+              <small style="color:var(--muted)">${h.date}</small>
+            </div>
+            <div style="text-align:right">
+              <strong>${formatTime(h.timeSec)}</strong><br>
+              <small style="color:var(--accent)">${h.pts} pts WAQ</small>
+            </div>
+          </div>
+          ${splitsHtml}
+        </div>`;
+      }).join('');
+
+
+  const canvas = document.getElementById('chartCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (filtered.length < 2) {
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '13px sans-serif';
+    ctx.fillText('Guarda al menos 2 marcas de esta prueba y piscina para ver la gráfica', 15, 95);
+    return;
+  }
+
+  const times = filtered.map(f => f.timeSec);
+  const minT = Math.min(...times) * 0.995;
+  const maxT = Math.max(...times) * 1.005;
+  ctx.strokeStyle = '#0ea5e9';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  filtered.forEach((item, i) => {
+    const x = 30 + (i / (filtered.length - 1)) * (canvas.width - 60);
+    const y = 25 + ((item.timeSec - minT) / (maxT - minT || 1)) * (canvas.height - 50);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+}
+
+function exportCSV() {
+  if (historyData.length === 0) return alert("No hay datos para exportar.");
+  let csv = "Fecha;Nadador;Piscina;Prueba;Tiempo_Seg;Marca;Puntos_WAQ\n";
+  historyData.forEach(h => {
+    csv += `${h.date};${h.name};${h.pool};${h.event};${h.timeSec};${formatTime(h.timeSec)};${h.pts}\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = "historial_natacion.csv";
+  a.click();
+}
+
+async function forceAppUpdate() {
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+  }
+  if ('serviceWorker' in navigator) {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map(r => r.update()));
+  }
+  location.reload(true);
+}
+
+init();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+</script>
+</body>
+</html>
