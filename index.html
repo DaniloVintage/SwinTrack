@@ -297,6 +297,30 @@
       <label>Importar JSON de Tiempos Base WAQ</label>
       <input type="file" accept=".json" onchange="importJSON(event, 'waq')">
     </div>
+        <div class="card">
+      <details>
+        <summary style="cursor:pointer;font-weight:bold;color:var(--accent);font-size:0.95rem;">
+          📖 Guía de Mantenimiento Anual (WAQ y RFEN)
+        </summary>
+        <div style="margin-top:12px;font-size:0.82rem;color:#cbd5e1;line-height:1.5;">
+          <p style="margin:6px 0;"><strong style="color:white;">1. Calendario de actualización:</strong><br>
+          • <strong>1 de enero:</strong> Tiempos base WAQ piscina 50m (<code>p50</code>).<br>
+          • <strong>1 de septiembre:</strong> Tiempos base WAQ piscina 25m (<code>p25</code>).<br>
+          • <strong>Septiembre / Octubre:</strong> Mínimas Nacionales RFEN.</p>
+
+          <p style="margin:10px 0;"><strong style="color:white;">2. Actualizar Tiempos Base WAQ:</strong><br>
+          Descarga los tiempos base (en segundos) en <em>://worldaquatics.com</em>, edita <code>index.html</code> en GitHub (bloque <code>WAQ_BASE</code>) y pulsa <strong>Commit changes</strong>.</p>
+
+          <p style="margin:10px 0;"><strong style="color:white;">3. Actualizar Mínimas RFEN:</strong><br>
+          • <em>Solo en este móvil:</em> Súbelo arriba en «Importar JSON de Mínimas RFEN».<br>
+          • <em>Para todos los usuarios:</em> Edita el bloque <code>DEFAULT_RFEN_DATA</code> en <code>index.html</code> de GitHub (tiempos en segundos) y pulsa <strong>Commit changes</strong>.</p>
+
+          <p style="margin:10px 0 0;"><strong style="color:white;">4. Aplicar cambios en el móvil:</strong><br>
+          Espera 1 minuto tras guardar en GitHub, abre la app y pulsa el botón <strong>🔄</strong> de arriba a la derecha.</p>
+        </div>
+      </details>
+    </div>
+
   </div>
 </div>
 
