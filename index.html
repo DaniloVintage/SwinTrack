@@ -296,6 +296,10 @@
       <input type="file" accept=".json" onchange="importJSON(event, 'rfen')">
       <label>Importar JSON de Tiempos Base WAQ</label>
       <input type="file" accept=".json" onchange="importJSON(event, 'waq')">
+      <button class="btn-outline" style="margin-top:10px;padding:9px;font-size:0.82rem;color:#38bdf8;" onclick="localStorage.removeItem('customRfen');localStorage.removeItem('customWaq');alert('✅ Tablas oficiales de GitHub restauradas');location.reload();">
+  ♻️ Usar tablas oficiales integradas (borrar JSON manual)
+</button>
+
     </div>
         <div class="card">
       <details>
