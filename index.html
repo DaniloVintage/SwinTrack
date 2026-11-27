@@ -814,6 +814,21 @@ async function forceAppUpdate() {
   }
   location.reload(true);
 }
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const cronoView = document.getElementById('view-crono');
+  if (cronoView.classList.contains('hidden')) return;
+
+  e.preventDefault();
+  const isSetupVisible = !document.getElementById('crono-setup').classList.contains('hidden');
+  const isRunningVisible = !document.getElementById('crono-running').classList.contains('hidden');
+
+  if (isSetupVisible) {
+    startChrono();
+  } else if (isRunningVisible) {
+    recordSplit();
+  }
+});
 
 init();
 (function setupDynamicPWA() {
