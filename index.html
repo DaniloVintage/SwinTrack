@@ -502,6 +502,14 @@ let RFEN_DATA = JSON.parse(localStorage.getItem('customRfen')) || DEFAULT_RFEN_D
 function vibrate(ms = 45) {
   if (navigator.vibrate) navigator.vibrate(ms);
 }
+  let wakeLock = null;
+async function keepScreenOn() {
+  try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+}
+function releaseScreen() {
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+
 let profiles = JSON.parse(localStorage.getItem('swimProfiles')) || [];
 let activeIdx = parseInt(localStorage.getItem('activeSwimmerIdx')) || 0;
 let historyData = JSON.parse(localStorage.getItem('swimHistory')) || [];
