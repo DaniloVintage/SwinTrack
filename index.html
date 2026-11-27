@@ -480,16 +480,15 @@ let timerInterval = null, startTime = 0, splits = [], rawFinalSec = 0, lastTapTi
 
 
 function init() {
-    document.querySelectorAll('.event-selector').forEach(sel => {
-    sel.innerHTML = EVENTS.map(e => `<option value="${e}">${e}</option>`).join('');
-    sel.value = "50_libre";
-  });
-
+  document.querySelectorAll('.event-selector').forEach(sel => {
+    sel.innerHTML = EVENTS.map(([id, label]) => `<option value="${id}">${label}</option>`).join('');
+    sel.value = "200_libre";
   });
   renderProfileSelect();
   if (profiles.length === 0) showTab('perfil');
   else showTab('home');
 }
+
 
 function renderProfileSelect() {
   const sel = document.getElementById('activeSwimmerSelect');
