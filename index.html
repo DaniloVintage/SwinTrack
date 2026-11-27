@@ -189,21 +189,9 @@
     </div>
 
         <div class="lcd-bezel hidden" id="crono-running">
-      <div class="lcd-screen">
-        <div class="lcd-top-bar">
-          <span id="runTitle">200M LIBRE (P50)</span>
-          <span id="runTarget">META: 200M</span>
-        </div>
-        <div class="lcd-digits-wrap">
-          <div class="lcd-ghost">88:88.88</div>
-          <div class="lcd-real" id="chronoTime">00:00.00</div>
-        </div>
-        <div class="lcd-sub">
-          <span id="lcdLapInfo">LAP 00: 00.00</span>
-          <span id="lcdDistInfo">DIST: 0M</span>
-        </div>
-      </div>
-
+      <div class="lcd-screen" onclick="recordSplit()" style="cursor:pointer;">
+<div style="text-align:center;font-size:0.68rem;opacity:0.65;margin-top:4px;">TOCA EN CUALQUIER PARTE DE LA PANTALLA</div>
+</div>
       <div class="phys-buttons">
         <button class="btn-phys-lap" onclick="undoSplit()">↩ DESHACER</button>
         <button id="btnAction" class="btn-phys-stop" onclick="recordSplit()">⏱️ PARCIAL</button>
@@ -486,7 +474,8 @@ function vibrate(ms = 45) {
 let profiles = JSON.parse(localStorage.getItem('swimProfiles')) || [];
 let activeIdx = parseInt(localStorage.getItem('activeSwimmerIdx')) || 0;
 let historyData = JSON.parse(localStorage.getItem('swimHistory')) || [];
-let timerInterval = null, startTime = 0, splits = [], rawFinalSec = 0;
+let timerInterval = null, startTime = 0, splits = [], rawFinalSec = 0, lastTapTime = 0;
+
 
 function init() {
   document.querySelectorAll('.event-selector').forEach(sel => {
@@ -647,7 +636,11 @@ function updateActionButton(nextDist, totalDist) {
 
 
 function recordSplit() {
-vibrate(35);
+  const now = Date.now();
+  if (now - lastTapTime < 350) return;
+  lastTapTime = now;
+  document.activeElement?.blur();
+  vibrate(35);
   const elapsed = (performance.now() - startTime) / 1000;
   const totalDist = parseInt(document.getElementById('cEvent').value.split('_')[0]);
   const step = parseInt(document.getElementById('cSplitDist').value);
