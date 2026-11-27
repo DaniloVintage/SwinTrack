@@ -108,8 +108,10 @@ font-weight: 900;
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SwimTrack">
 <link rel="icon" href="data:,">
-
-  body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 75px; }
+<style>
+  :root { --bg: #0f172a; --card: #1e293b; --accent: #0ea5e9; --green: #10b981; --red: #ef4444; --text: #f8fafc; --muted: #94a3b8; }
+  * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+  body { margin: 0; background: var(--bg);
   header { background: var(--card); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; position: sticky; top: 0; z-index: 10; }
   header h1 { margin: 0; font-size: 1.05rem; color: var(--accent); }
   #activeSwimmerSelect { width: auto; max-width: 190px; padding: 6px 8px; font-size: 0.85rem; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 8px; }
