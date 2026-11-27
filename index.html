@@ -332,13 +332,28 @@
 
 
 <script>
-const EVENTS = [
-  ["50_libre","50m Libre"],["100_libre","100m Libre"],["200_libre","200m Libre"],["400_libre","400m Libre"],["800_libre","800m Libre"],["1500_libre","1500m Libre"],["3000_libre","3000m Libre"]
-  ["50_espalda","50m Espalda"],["100_espalda","100m Espalda"],["200_espalda","200m Espalda"],
-  ["50_braza","50m Braza"],["100_braza","100m Braza"],["200_braza","200m Braza"],
-  ["50_mariposa","50m Mariposa"],["100_mariposa","100m Mariposa"],["200_mariposa","200m Mariposa"],
-  ["100_estilos","100m Estilos (p25)"],["200_estilos","200m Estilos"],["400_estilos","400m Estilos"]
-];
+const EVENTS = {
+  "50_libre": "50m Libre",
+  "100_libre": "100m Libre",
+  "200_libre": "200m Libre",
+  "400_libre": "400m Libre",
+  "800_libre": "800m Libre",
+  "1500_libre": "1500m Libre",
+  "3000_libre": "3000m Libre",
+  "50_espalda": "50m Espalda",
+  "100_espalda": "100m Espalda",
+  "200_espalda": "200m Espalda",
+  "50_braza": "50m Braza",
+  "100_braza": "100m Braza",
+  "200_braza": "200m Braza",
+  "50_mariposa": "50m Mariposa",
+  "100_mariposa": "100m Mariposa",
+  "200_mariposa": "200m Mariposa",
+  "100_estilos": "100m Estilos (p25)",
+  "200_estilos": "200m Estilos",
+  "400_estilos": "400m Estilos"
+};
+
 
 let WAQ_BASE = JSON.parse(localStorage.getItem('customWaq')) || {
   p50: {
@@ -481,13 +496,14 @@ let timerInterval = null, startTime = 0, splits = [], rawFinalSec = 0, lastTapTi
 
 function init() {
   document.querySelectorAll('.event-selector').forEach(sel => {
-    sel.innerHTML = EVENTS.map(([id, label]) => `<option value="${id}">${label}</option>`).join('');
+    sel.innerHTML = Object.entries(EVENTS).map(([id, label]) => `<option value="${id}">${label}</option>`).join('');
     sel.value = "200_libre";
   });
   renderProfileSelect();
   if (profiles.length === 0) showTab('perfil');
   else showTab('home');
 }
+
 
 
 function renderProfileSelect() {
