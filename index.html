@@ -190,10 +190,23 @@
       <button class="btn-green" onclick="startChrono()">▶ SALIDA (START)</button>
     </div>
 
-        <div class="lcd-bezel hidden" id="crono-running">
+           <div class="lcd-bezel hidden" id="crono-running">
       <div class="lcd-screen" onclick="recordSplit()" style="cursor:pointer;">
-<div style="text-align:center;font-size:0.68rem;opacity:0.65;margin-top:4px;">TOCA EN CUALQUIER PARTE DE LA PANTALLA</div>
-</div>
+        <div class="lcd-top-bar">
+          <span id="runTitle">200M LIBRE (P50)</span>
+          <span id="runTarget">META: 200M</span>
+        </div>
+        <div class="lcd-digits-wrap">
+          <div class="lcd-ghost">88:88.88</div>
+          <div class="lcd-real" id="chronoTime">00:00.00</div>
+        </div>
+        <div class="lcd-sub">
+          <span id="lcdLapInfo">LAP 00: 00.00</span>
+          <span id="lcdDistInfo">DIST: 0M</span>
+        </div>
+        <div style="text-align:center;font-size:0.68rem;opacity:0.65;margin-top:4px;">TOCA EN CUALQUIER PARTE DE LA PANTALLA</div>
+      </div>
+
       <div class="phys-buttons">
         <button class="btn-phys-lap" onclick="undoSplit()">↩ DESHACER</button>
         <button id="btnAction" class="btn-phys-stop" onclick="recordSplit()">⏱️ PARCIAL</button>
@@ -202,6 +215,7 @@
       <div class="splits-list" id="splitsList" style="margin-top:12px;"></div>
       <button class="btn-outline" style="margin-top:10px;padding:9px;font-size:0.82rem;border-color:#ef4444;color:#fca5a5;" onclick="stopChrono()">⏹ Detener antes de meta</button>
     </div>
+
 
     
 
@@ -624,26 +638,40 @@ function updateSplitOptions() {
 
 function startChrono() {
   vibrate(50);
+  keepScreenOn();
   if (profiles.length === 0) return alert("Crea primero un perfil de nadador.");
   const ev = document.getElementById('cEvent');
   const totalDist = parseInt(ev.value.split('_')[0]);
   const step = parseInt(document.getElementById('cSplitDist').value);
   splits = [];
   startTime = performance.now();
-  document.getElementById('crono-setup').classList.add('hidden');
-  document.getElementById('crono-result').classList.add('hidden');
-  document.getElementById('crono-running').classList.remove('hidden');
-  document.getElementById('runTitle').textContent = `${ev.options[ev.selectedIndex].text} (${document.getElementById('cPool').value})`;
-  document.getElementById('runTarget').textContent = `Meta: ${totalDist}m`;
-  document.getElementById('splitsList').innerHTML = '';
+  document.getElementById('crono-setup')?.classList.add('hidden');
+  document.getElementById('crono-result')?.classList.add('hidden');
+  document.getElementById('crono-running')?.classList.remove('hidden');
+
+  const titleEl = document.getElementById('runTitle');
+  const targetEl = document.getElementById('runTarget');
+  const lapEl = document.getElementById('lcdLapInfo');
+  const distEl = document.getElementById('lcdDistInfo');
+  const splitsEl = document.getElementById('splitsList');
+
+  if (titleEl) titleEl.textContent = `${ev.options[ev.selectedIndex].text} (${document.getElementById('cPool').value})`;
+  if (targetEl) targetEl.textContent = `META: ${totalDist}M`;
+  if (lapEl) lapEl.textContent = `LAP 00: 00.00`;
+  if (distEl) distEl.textContent = `DIST: 0M`;
+  if (splitsEl) splitsEl.innerHTML = '';
+
   updateActionButton(step, totalDist);
+  clearInterval(timerInterval);
   timerInterval = setInterval(() => {
-    document.getElementById('chronoTime').textContent = formatTime((performance.now() - startTime) / 1000);
+    const timeEl = document.getElementById('chronoTime');
+    if (timeEl) timeEl.textContent = formatTime((performance.now() - startTime) / 1000);
   }, 20);
 }
 
 function updateActionButton(nextDist, totalDist) {
   const btn = document.getElementById('btnAction');
+  if (!btn) return;
   if (nextDist >= totalDist) {
     btn.textContent = `🏁 PARAR (${totalDist}M)`;
     btn.className = 'btn-phys-stop finish';
@@ -653,23 +681,32 @@ function updateActionButton(nextDist, totalDist) {
   }
 }
 
-
 function recordSplit() {
   const now = Date.now();
   if (now - lastTapTime < 350) return;
   lastTapTime = now;
   document.activeElement?.blur();
   vibrate(35);
+
   const elapsed = (performance.now() - startTime) / 1000;
   const totalDist = parseInt(document.getElementById('cEvent').value.split('_')[0]);
   const step = parseInt(document.getElementById('cSplitDist').value);
   const currentDist = (splits.length + 1) * step;
   const prevTime = splits.length > 0 ? splits[splits.length - 1].cum : 0;
+
   splits.push({ dist: Math.min(currentDist, totalDist), cum: elapsed, lap: elapsed - prevTime });
-    const last = splits[splits.length - 1];
-  document.getElementById('lcdLapInfo').textContent = `LAP ${String(splits.length).padStart(2,'0')}: ${formatTime(last.lap)}`;
-  document.getElementById('lcdDistInfo').textContent = `DIST: ${last.dist}M`;
-  document.getElementById('splitsList').innerHTML = splits.map(s => `<div class="split-item"><span><strong>${s.dist}m</strong></span><span>Parcial: ${formatTime(s.lap)}</span><span>Acum: ${formatTime(s.cum)}</span></div>`).reverse().join('');
+  const last = splits[splits.length - 1];
+
+  const lapEl = document.getElementById('lcdLapInfo');
+  const distEl = document.getElementById('lcdDistInfo');
+  const splitsEl = document.getElementById('splitsList');
+
+  if (lapEl) lapEl.textContent = `LAP ${String(splits.length).padStart(2,'0')}: ${formatTime(last.lap)}`;
+  if (distEl) distEl.textContent = `DIST: ${last.dist}M`;
+  if (splitsEl) {
+    splitsEl.innerHTML = splits.map(s => `<div class="split-item"><span><strong>${s.dist}m</strong></span><span>Parcial: ${formatTime(s.lap)}</span><span>Acum: ${formatTime(s.cum)}</span></div>`).reverse().join('');
+  }
+
   if (currentDist >= totalDist) finishChrono(elapsed);
   else updateActionButton(currentDist + step, totalDist);
 }
