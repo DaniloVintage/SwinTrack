@@ -892,6 +892,13 @@ document.addEventListener('keydown', function(e) {
     recordSplit();
   }
 });
+document.addEventListener('pointerdown', function(e) {
+  const runningBox = document.getElementById('crono-running');
+  if (!runningBox || runningBox.classList.contains('hidden')) return;
+  if (e.target.closest('button, select, input, nav, header')) return;
+  e.preventDefault();
+  recordSplit();
+});
 
 init();
 (function setupDynamicPWA() {
